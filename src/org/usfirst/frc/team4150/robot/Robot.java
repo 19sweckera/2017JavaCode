@@ -34,8 +34,27 @@ public class Robot extends SampleRobot {
 				double right = fb;
 				
 				//apply turning
-				left += lr;
-				right -= lr;
+				//left += lr;
+				//right -= lr;
+				
+				//apply turning v2
+				if (fb > 0.0) {
+					if (lr > 0.0) {
+						left = fb - lr;
+						right = Math.max(fb, lr);
+					} else {
+						left = Math.max(fb, -lr);
+						right = fb + lr;
+					}
+				} else {
+					if (lr > 0.0) {
+						left = -Math.max(-fb, lr);
+						right = fb + lr;
+					} else {
+						left = fb - lr;
+						right = -Math.max(-fb, -lr);
+					}
+				}
 				
 				//apply slow mode
 				if(slowMode) {
