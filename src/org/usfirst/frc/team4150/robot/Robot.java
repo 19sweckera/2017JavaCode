@@ -17,8 +17,12 @@ public class Robot extends IterativeRobot {
 	private RobotDrive drive = new RobotDrive(0, 1); // class that handles basic drive
 	private Joystick stick1 = new Joystick(0); // set to ID 1 in DriverStation
 	private Compressor compressor = new Compressor(0);
-	private DoubleSolenoid climbBreak = new DoubleSolenoid(2, 3);
-	boolean solenoidPressed = false;
+	private DoubleSolenoid idkSolenoid = new DoubleSolenoid(0, 1);
+	private DoubleSolenoid gearPlatform = new DoubleSolenoid(2, 3);
+	private DoubleSolenoid gearArms = new DoubleSolenoid(4, 5);
+	private boolean xPressed = false;
+	private boolean yPressed = false;
+	
 	
 	Timer timer = new Timer();
 
@@ -29,6 +33,8 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 		drive.setExpiration(0.1); // No Java docs D:
 		compressor.setClosedLoopControl(true);
+		gearPlatform.set(Value.kReverse);
+		gearArms.set(Value.kReverse);
 	}
 	
 	/**
@@ -40,29 +46,54 @@ public class Robot extends IterativeRobot {
 			//get controller input
 			double fb = stick1.getY(); // forward & backward
 			double lr = stick1.getRawAxis(4)/2; //left & right
-			boolean slowMode = stick1.getRawButton(6);
-			boolean solenoid = stick1.getRawButton(3);
+			boolean rightBumper = stick1.getRawButton(6);
+			boolean xButton = stick1.getRawButton(3);
+			boolean yButton = stick1.getRawButton(4);
 			
-			//solenoid (wip)
-			if(solenoid) {
-				if(!solenoidPressed) {
-					Value v = climbBreak.get();
+			//front solenoids
+			if(xButton) {
+				if(!xPressed) {
+					Value v = gearArms.get();
 					switch(v) {
+					//if the arms are closed
 					case kForward:
-						climbBreak.set(Value.kReverse);
+						//let gear out
+						gearArms.set(Value.kReverse); //open the arms
+						gearPlatform.set(Value.kReverse); //lower the platform
 						break;
-					case kOff:
-						break;
+					//if the arms are open
 					case kReverse:
-						climbBreak.set(Value.kForward);
+						//keep gear in
+						gearPlatform.set(Value.kForward); //raise the platform
+						gearArms.set(Value.kForward); //close the arms
 						break;
 					default:
 						break;
 					}
-					solenoidPressed = true;
+					xPressed = true;
 				}
 			} else {
-				solenoidPressed = false;
+				xPressed = false;
+			}
+			
+			//solenoid (wip)
+			if(yButton) {
+				if(!yPressed) {
+					Value v = idkSolenoid.get();
+					switch(v) {
+					case kForward:
+						idkSolenoid.set(Value.kReverse);
+						break;
+					case kReverse:
+						idkSolenoid.set(Value.kForward); //raise the platform
+						break;
+					default:
+						break;
+					}
+					yPressed = true;
+				}
+			} else {
+				yPressed = false;
 			}
 			
 			//start out with just forward and backward
@@ -89,18 +120,12 @@ public class Robot extends IterativeRobot {
 			}
 			
 			//apply slow mode
-			if(slowMode) {
+			if(rightBumper) {
 				right /= 2;
 				left /= 2;
 			}
 			
 			if(Math.abs(left) < 0.2 && Math.abs(right) < 0.2) left = right = 0;
-
-			if(right > 0) {
-				//left *= 0.8;
-			} else {
-				right *= 0.8;
-			}
 			
 			//set left and right motor power output
 			drive.setLeftRightMotorOutputs(limit(left), limit(right));
